@@ -1,9 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Query } from '@angular/core';
 import { HttpService, RequestMethod } from './http.service';
 import { Observable, of } from 'rxjs';
 import { Language, Project, LanguageStatistic } from  '../models';
 import { map, filter } from '../../../node_modules/rxjs/operators';
 import { ProjectTranslationStatistics } from '../models/projectTranslationStatistics';
+import { AdvancedQuery } from '../models/Query';
 
 @Injectable({
   providedIn: 'root'
@@ -137,8 +138,8 @@ getProjectLanguageStatistic(projectId: number, langId: number) : Observable<Lang
     return this.dataService.sendRequest(RequestMethod.Get, this.api + '/' + projectId + '/glossaries', undefined, undefined);
   }
   
-  getProjectStringsWithPagination(projectId: number, itemsOnPage: number, page: number, search: string) : Observable<any> {
-    return this.dataService.sendRequest(RequestMethod.Get, this.api + '/' + projectId,'paginatedStrings?itemsOnPage='+itemsOnPage+'&page='+page+'&search='+search);
+  getProjectStringsWithPagination(projectId: number, itemsOnPage: number, page: number, query: AdvancedQuery) : Observable<any> {
+    return this.dataService.sendRequest(RequestMethod.Post, this.api + '/' + projectId,'paginatedStrings?itemsOnPage='+itemsOnPage+'&page='+page, query);
   }
 
   getProjectActivitiesById(projectId: number) : Observable<any> {

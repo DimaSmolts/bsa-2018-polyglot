@@ -25,7 +25,7 @@
                             </h4>
                             <hr>
                             <div class="fiter-content">
-                                <div (click)="$event.stopPropagation();" *ngFor="let opt of filterOptions;let i = index">
+                                <div (click)="$event.stopPropagation();" *ngFor="let opt of getOptions();let i = index">
                                     <mat-checkbox (change)="selectFilterOption($event,i)">{{opt}}</mat-checkbox>
                                 </div>
                             </div>
@@ -37,15 +37,17 @@
                             <hr>
                             <div class="fiter-content" style="grid-template-columns: auto auto auto auto">
                                 <div *ngFor="let opt of projectTags;let i = index" (click)="$event.stopPropagation();">
-                                    <mat-checkbox (change)="selectTag($event,i)">{{opt}}</mat-checkbox>
+                                    <mat-checkbox (change)="selectTag($event,i)">{{opt.name}}</mat-checkbox>
                                 </div>
                                 <div *ngIf="projectTags.length === 0">
-                                    No strings with tags
+                                    No tags in project
                                 </div>
                             </div>
                         </div>
                         <hr>
+                        <!--
                         <button style="margin-right:10px;margin-bottom:10px;float:right;" mat-flat-button (click)="onFilterApply();">Apply</button>
+                        -->
                     </div>
                 </mat-menu>
                 <!--             <mat-form-field class="filter">

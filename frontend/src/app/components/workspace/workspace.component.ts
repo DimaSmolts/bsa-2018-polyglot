@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, DoCheck, KeyValueDiffers, AfterViewInit } from "@angular/core";
+import { Component, OnInit, OnDestroy, DoCheck, KeyValueDiffers, AfterViewInit, Query } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Subscription, forkJoin, empty } from "rxjs";
 import { Project, UserProfile, Language } from "../../models";
@@ -16,6 +16,9 @@ import { EventService } from "../../services/event.service";
 import { Hub } from "../../models/signalrModels/hub";
 import { RightService } from "../../services/right.service";
 import { RightDefinition } from "../../models/rightDefinition";
+
+import { AdvancedQuery } from "../../models/Query";
+import { translationType } from "../../models/Query";
 
 @Component({
     selector: "app-workspace",
@@ -37,7 +40,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
     public isLoad: boolean;
     public projectLanguagesCount: number;
     public stringsInProgress: number[] = [];
-    public projectTags: string[] = [];
+    public projectTags;
     private routeSub: Subscription;
     private loop: any;
     private currentKeyId: number;
@@ -51,6 +54,10 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
     private rights: RightDefinition[];
 
     filters: Array<string>;
+
+
+    public query: AdvancedQuery;
+    public fOptions: translationType;
 
     filterOptions: string[] = [
         "Translated",
@@ -76,7 +83,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
         this.eventService.listen().subscribe(
             (result) => {
                 if (result.isEditing !== undefined) {
-                    this.isEditing = result.isEditing
+                    this.isEditing = result.isEditing;
                     if (!this.isEditing) {
                         clearInterval(this.loop);
                     }
@@ -96,17 +103,18 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
     answer: boolean;
 
     ngOnInit() {
+        this.query = new AdvancedQuery();
         this.filters = [];
         this.searchQuery = '';
         this.routeSub = this.activatedRoute.params.subscribe(params => {
-            //making api call using service service.get(params.projectId); ..
+            // making api call using service service.get(params.projectId); ..
             forkJoin(
                 this.projectService.getById(params.projectId),
                 this.projectService.getProjectLanguages(params.projectId),
                 this.projectId = params.projectId
             ).subscribe(result => {
                 this.project = result[0];
-                this.projectTags = this.project.tags.map(x => x.name);
+                this.projectTags = this.project.tags;
                 this.projectService
                     .getProjectLanguages(this.project.id)
                     .subscribe(
@@ -141,7 +149,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
                     params.projectId,
                     this.elementsOnPage,
                     0,
-                    this.searchQuery.trim()
+                    this.query
                 )
                 .subscribe((data: any) => {
                     if (data) {
@@ -211,13 +219,15 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
         });
         dialogRef.componentInstance.onAddString.subscribe(result => {
             if (result) {
+               
                 this.keys.push(result);
+                /*
                 result.tags.map(x => x.name)
                 .forEach(element => {
                     if(!this.projectTags.includes(element)){
                         this.projectTags.push(element);
                     }
-                })
+                })*/
                 this.selectedKey = result;
                 let keyId = this.keys[0].id;
                 this.router.navigate([this.currentPath, keyId]);
@@ -318,7 +328,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
                             this.stringsInProgress.splice(this.stringsInProgress.indexOf(response.ids[0]), 1);
                         }
                     }, 9700);
-                }            
+                }
             }
         );
         this.signalRConnection.on(
@@ -371,20 +381,19 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
 
     selectFilterOption($event, index) {
         if ($event.checked) {
-            this.filters.push("filter/" + this.filterOptions[index]);
+            this.query.status = index + 1;
         } else {
-            this.filters = this.filters.filter(x => {
-                return x !== "filter/" + this.filterOptions[index];
-            });
+            this.query.status = translationType.All;
         }
     }
 
     selectTag($event, index) {
         if ($event.checked) {
-            this.filters.push("tags/" + this.projectTags[index]);
+            this.query.tags.push(this.projectTags[index].id);
         } else {
             this.filters = this.filters.filter(x => {
-                return x !== "tags/" + this.projectTags[index];
+                const ind = this.query.tags.indexOf(this.projectTags[index].id);
+                this.query.tags.splice(ind, 1);
             });
         }
     }
@@ -407,7 +416,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
                 this.project.id,
                 this.elementsOnPage,
                 this.currentPage,
-                this.currentSearchQuery.trim()
+                this.query
             )
             .subscribe((keys: any) => {
                 this.currentPage++;
@@ -459,14 +468,14 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
     }
 
     searchChanges() {
-        this.currentSearchQuery = this.searchQuery;
+        this.query.searchQuery = this.searchQuery;
         this.currentPage = 0;
         this.projectService
                 .getProjectStringsWithPagination(
                     this.projectId,
                     this.elementsOnPage,
                     this.currentPage,
-                    this.currentSearchQuery.trim()
+                    this.query
                 )
                 .subscribe((data: any) => {
                     if (data) {
@@ -492,15 +501,20 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
         this.currentPage++;
     }
 
-    isCurrentUserCanAddNewString(): boolean{
-        if(this.userService.isCurrentUserManager()){
+    isCurrentUserCanAddNewString(): boolean {
+        if (this.userService.isCurrentUserManager()) {
             return true;
         }
-        if(this.rights){
+        if (this.rights) {
             return this.rights.includes(RightDefinition.AddNewKey);
-        }
-        else{
+        } else {
             return false;
         }
+    }
+
+    getOptions() {
+        return Object.keys(translationType).filter(
+            (type) => isNaN(<any>type) && type !== 'All'
+        );
     }
 }
