@@ -391,10 +391,8 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
         if ($event.checked) {
             this.query.tags.push(this.projectTags[index].id);
         } else {
-            this.filters = this.filters.filter(x => {
-                const ind = this.query.tags.indexOf(this.projectTags[index].id);
-                this.query.tags.splice(ind, 1);
-            });
+            const ind = this.query.tags.indexOf(this.projectTags[index].id);
+            this.query.tags.splice(ind, 1);
         }
     }
 
@@ -423,11 +421,6 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
                 saveResultsCallback(keys);
             });
     }
-
-    /*     test(id){
-    var checkbox = document.getElementById("mat-checkbox-"+id);
-    console.log(checkbox.classList.contains("mat-checkbox-checked"));
-    } */
 
     highlightStringStatus(key) {
         if (this.stringsInProgress.includes(key.id)) {
@@ -478,6 +471,7 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
                     this.query
                 )
                 .subscribe((data: any) => {
+                    debugger;
                     if (data) {
                         this.keys = data;
                         this.isLoad = true;
@@ -491,12 +485,17 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
                             this.isLoad = true;
                         }
                     }
+
+                    this.getKeys(this.currentPage, keys => {
+                        this.keys = this.keys.concat(keys);
+                    });
+                    /*
                     let list = this.keys.filter(x => x.tags.length > 0);
                     this.projectTags = [].concat.apply(
                         [],
                         list.map(x => x.tags)
                     );
-                    this.projectTags = Array.from(new Set(this.projectTags));
+                    this.projectTags = Array.from(new Set(this.projectTags));*/
                 });
         this.currentPage++;
     }
@@ -516,5 +515,12 @@ export class WorkspaceComponent implements OnInit, OnDestroy, DoCheck {
         return Object.keys(translationType).filter(
             (type) => isNaN(<any>type) && type !== 'All'
         );
+    }
+
+    cleanSearch() {
+        
+        this.query.status = translationType.All;
+        this.query.tags = [];
+        
     }
 }

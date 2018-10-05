@@ -183,7 +183,7 @@ namespace Polyglot.Controllers
 			if (search == null)
 				search = "";
 
-            var projectsStrings = await service.GetProjectStringsWithPaginationAsync(id,itemsOnPage,page, search);
+            var projectsStrings = await service.GetProjectStringsWithPaginationAsync(id,itemsOnPage,page, query);
 
             return projectsStrings == null ? NotFound("No project strings found!") as IActionResult
              : Ok(projectsStrings);

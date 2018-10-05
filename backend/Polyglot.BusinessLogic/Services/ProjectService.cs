@@ -754,7 +754,17 @@ namespace Polyglot.BusinessLogic.Services
             return map;
         }
 
-        public async Task<IEnumerable<ComplexStringDTO>> GetProjectStringsWithPaginationAsync(int id, int itemsOnPage, int page, string search)
+		private static QueryContainer TermAny<T>(QueryContainerDescriptor<T> descriptor, Field field, List<int> values) where T : class
+		{
+			QueryContainer q = new QueryContainer();
+			foreach (var value in values)
+			{
+				q &= descriptor.Term(t => t.Field(field).Value(value));
+			}
+			return q;
+		}
+
+		public async Task<IEnumerable<ComplexStringDTO>> GetProjectStringsWithPaginationAsync(int id, int itemsOnPage, int page, Query query)
         {
 			// check if Elastic is connected
 			// if true use elastic else use mongo			
@@ -763,6 +773,28 @@ namespace Polyglot.BusinessLogic.Services
 				// sorts string by creation date
 				var sorter = new SortDescriptor<DataAccess.ElasticsearchModels.ComplexStringIndex>();
 				sorter.Field("CreatedAt", Nest.SortOrder.Ascending);
+
+				int languagesCount = (await uow.GetRepository<Project>().GetAsync(id)).ProjectLanguageses.Count;
+				int min = 0, max = 0;
+				switch (query.Status)
+				{
+					case Query.TranslationStatus.All:
+						min = 0;
+						max = languagesCount;
+						break;
+					case Query.TranslationStatus.Untranslated:
+						min = 0;
+						max = 0;
+						break;
+					case Query.TranslationStatus.InProgress:
+						min = 1;
+						max = languagesCount - 1;
+						break;
+					case Query.TranslationStatus.Done:
+						min = languagesCount;
+						max = languagesCount;
+						break;
+				}
 
 				// ElasticSearch query equals to
 				// ({id} == projectId) && (search == str.key || search == str.OriginalValue)
@@ -783,21 +815,30 @@ namespace Polyglot.BusinessLogic.Services
 										.Should(sh => sh
 											.Match(m => m
 												.Field( f=> f.Key)
-												.Query(search)
+												.Query(query.SearchQuery)
 											), sh => sh
 											.Match(m => m
 												.Field(f => f.OriginalValue)
-												.Query(search)
+												.Query(query.SearchQuery)
 											)
 										)
-									)
+									), mu => mu
+									.Bool(bbb=>bbb
+										.Should(shsh => TermAny(shsh, "Tags", query.Tags))
+									)/*, mu => mu
+									.Range(r => r
+										.Field(f => f.Translations.Count)
+										.GreaterThanOrEquals(min)
+										.LessThanOrEquals(max)
+										.Relation(RangeRelation.Contains)
+									)*/
 								)
 							)						
 						)							
 					);
 
 				#region elasticSearch test
-				/*
+
 				SearchRequest<DataAccess.ElasticsearchModels.ComplexStringIndex> request =
 					new SearchRequest<DataAccess.ElasticsearchModels.ComplexStringIndex>()
 					{
@@ -820,12 +861,12 @@ namespace Polyglot.BusinessLogic.Services
 										new MatchQuery
 										{
 											Field = new Field("Key"),
-											Query = search
+											Query = query.SearchQuery
 										},
 										new MatchQuery
 										{
 											Field = new Field("OriginalValue"),
-											Query = search
+											Query = query.SearchQuery
 										}
 									}
 								}
@@ -833,7 +874,7 @@ namespace Polyglot.BusinessLogic.Services
 						}
 					};
 				var result2 = await elasticClient.SearchAsync<DataAccess.ElasticsearchModels.ComplexStringIndex>(request);
-				*/
+				
 
 				#endregion
 

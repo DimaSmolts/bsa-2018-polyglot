@@ -48,7 +48,7 @@ namespace Polyglot.BusinessLogic.Interfaces
 
         Task<IEnumerable<ComplexStringDTO>> GetProjectStringsAsync(int id);
 
-        Task<IEnumerable<ComplexStringDTO>> GetProjectStringsWithPaginationAsync(int id, int itemsOnPage, int page, string search);
+        Task<IEnumerable<ComplexStringDTO>> GetProjectStringsWithPaginationAsync(int id, int itemsOnPage, int page, Query query);
 
         Task<IEnumerable<ComplexStringDTO>> GetAllStringsAsync();
 
